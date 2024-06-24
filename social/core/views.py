@@ -1,0 +1,70 @@
+from django.shortcuts import render, redirect
+from django.contrib.auth.models import User, auth
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+
+from .models import Profile
+
+@login_required(login_url='signin')
+def home(request):
+    return render(request, 'home.html', {})
+
+@login_required(login_url='signin')
+def account_setting(request):
+    return render(request, 'account_setting.html', {})
+
+def signup(request):
+    if request.method == "POST":
+        username = request.POST["username"]
+        email = request.POST["email"]
+        password1 = request.POST["password1"]
+        password2 = request.POST["password2"]
+        if password1 == password2:
+            if User.objects.filter(email=email).exists():
+                messages.info(request, "Email Is Already Registered..")
+                return redirect('signup')
+            elif User.objects.filter(username=username).exists():
+                messages.warning(request, "Username Has Been Taken..")
+                return redirect('signup')
+            else:
+                user = User.objects.create_user(username=username, email=email, password=password1)
+                user.save()
+
+                login_user = auth.authenticate(username=username, password=password1)
+                auth.login(request, login_user)
+
+
+                user_model = User.objects.get(username=username)
+                user_profile = Profile.objects.create(user=user_model, userid=user_model.id)
+                user_profile.save()
+                return redirect('account_setting')
+        else:
+            messages.warning(request, "Password don't match..")
+            return redirect('signup')
+            
+    else:
+        return render(request, 'signup.html')
+    
+def signin(request):
+    if request.method == "POST":
+        username = request.POST["username"]
+        password = request.POST["password"]
+
+        user = auth.authenticate(username=username, password=password)
+
+        if user is not None:
+            auth.login(request, user)
+            return redirect("home")
+        else:
+            messages.warning(request, "Invalid Account, Please Try Again..")
+            return redirect("signin")
+    else:
+        return render(request, 'signin.html', {})
+    
+
+@login_required(login_url='signin')
+def logout(request):
+    auth.logout(request)
+    return redirect('signin')
+
+        
