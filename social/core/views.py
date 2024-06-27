@@ -11,7 +11,25 @@ def home(request):
 
 @login_required(login_url='signin')
 def account_setting(request):
-    return render(request, 'account_setting.html', {})
+    user_profile = Profile.objects.get(user=request.user)
+
+    if request.method == 'POST':
+
+        if request.FILES.get('profile_image') == None:
+            image = user_profile.profile_img
+        if request.FILES.get('profile_image') != None:
+            image = request.FILES.get('profile_image')
+
+        user_profile.profile_img = image
+        bio = request.POST['bio']
+        location = request.POST['location']
+        user_profile.bio = bio
+        user_profile.location = location
+        user_profile.save()
+        return redirect('account_setting')
+
+
+    return render(request, 'account_setting.html', {'user_profile': user_profile})
 
 def signup(request):
     if request.method == "POST":
