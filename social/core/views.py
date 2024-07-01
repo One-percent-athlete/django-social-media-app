@@ -3,12 +3,16 @@ from django.contrib.auth.models import User, auth
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 
-from .models import Profile
+from .models import Profile, Post
 
 @login_required(login_url='signin')
 def home(request):
-    return render(request, 'home.html', {})
-
+    user = User.objects.get(username=request.user.username)
+    user_profile = Profile.objects.get(user=user)
+    posts = Post.objects.all()
+    return render(request, 'home.html', {'user_profile': user_profile, 'posts':posts})
+    
+    
 @login_required(login_url='signin')
 def account_setting(request):
     user_profile = Profile.objects.get(user=request.user)
@@ -84,5 +88,19 @@ def signin(request):
 def logout(request):
     auth.logout(request)
     return redirect('signin')
+
+
+@login_required(login_url='signin')
+def create_post(request):
+    if request.method == 'POST':
+        user = request.user.username
+        image = request.FILES.get('file')
+        caption = request.POST['caption']
+
+        new_post = Post.objects.create(user=user, image=image, caption=caption)
+        new_post.save()
+        return redirect('home')
+    else:
+        return redirect('home')
 
         
