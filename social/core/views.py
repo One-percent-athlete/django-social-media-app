@@ -104,3 +104,6 @@ def create_post(request):
         return redirect('home')
 
         
+@login_required
+def like_post(request):
+    
