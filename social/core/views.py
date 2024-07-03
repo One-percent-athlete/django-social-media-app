@@ -106,4 +106,6 @@ def create_post(request):
         
 @login_required
 def like_post(request):
-    
+    return redirect('home')
+
+
