@@ -3,7 +3,7 @@ from django.contrib.auth.models import User, auth
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 
-from .models import Profile, Post
+from .models import Profile, Post, LikePost
 
 @login_required(login_url='signin')
 def home(request):
@@ -89,6 +89,14 @@ def logout(request):
     auth.logout(request)
     return redirect('signin')
 
+@login_required(login_url='signin')
+def profile(request, user_name):
+   user = User.objects.get(username=user_name)
+   profile = Profile.objects.get(user=user)
+   posts = Post.objects.filter(user=user_name)
+   num_of_posts = len(posts)
+   return render(request, 'profile.html', {'user': user, 'profile': profile, 'posts': posts, "num_of_posts": num_of_posts})
+
 
 @login_required(login_url='signin')
 def create_post(request):
@@ -104,8 +112,21 @@ def create_post(request):
         return redirect('home')
 
         
-@login_required
-def like_post(request):
-    return redirect('home')
+@login_required(login_url='signin')
+def like_post(request, post_id):
+    username = request.user.username
+    post = Post.objects.get(id=post_id)
+    like_filter = LikePost.objects.filter(post_id=post_id, username=username).first()
+    if like_filter == None:
+        new_like = LikePost.objects.create(post_id=post_id, username=username)
+        new_like.save()
+        post.num_of_likes += 1
+        post.save()
+        return redirect('home')
+    else:
+        like_filter.delete()
+        post.num_of_likes -= 1
+        post.save()
+        return redirect('home')
 
 
