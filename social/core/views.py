@@ -3,7 +3,7 @@ from django.contrib.auth.models import User, auth
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 
-from .models import Profile, Post, LikePost
+from .models import Profile, Post, LikePost, Followers
 
 @login_required(login_url='signin')
 def home(request):
@@ -71,7 +71,6 @@ def signin(request):
     if request.method == "POST":
         username = request.POST["username"]
         password = request.POST["password"]
-
         user = auth.authenticate(username=username, password=password)
 
         if user is not None:
@@ -95,7 +94,20 @@ def profile(request, user_name):
    profile = Profile.objects.get(user=user)
    posts = Post.objects.filter(user=user_name)
    num_of_posts = len(posts)
-   return render(request, 'profile.html', {'user': user, 'profile': profile, 'posts': posts, "num_of_posts": num_of_posts})
+   follower = request.user.username
+   followed = user_name
+
+   followers = len(Followers.objects.filter(user=user_name))
+   followings = len(Followers.objects.filter(follower=user_name))
+
+
+   if Followers.objects.filter(follower=follower, user=followed).first():
+       button_text = 'Unfollow'
+   else:
+       button_text = 'Follow'
+       
+
+   return render(request, 'profile.html', {'user': user, 'profile': profile, 'posts': posts, "num_of_posts": num_of_posts, 'button_text': button_text, 'followers':followers, 'followings':followings})
 
 
 @login_required(login_url='signin')
@@ -130,3 +142,17 @@ def like_post(request, post_id):
         return redirect('home')
 
 
+@login_required(login_url='signin')
+def follow(request):
+    if request.method == 'POST':
+        follower = request.POST['follower']
+        user = request.POST['user']
+        if Followers.objects.filter(follower=follower, user=user).first():
+            follower = Followers.objects.get(follower=follower, user=user)
+            follower.delete()
+        else:
+            follower = Followers.objects.create(follower=follower, user=user)
+            follower.save()
+        return redirect(request.META.get('HTTP_REFERER'))
+    else:
+        return redirect('home')
