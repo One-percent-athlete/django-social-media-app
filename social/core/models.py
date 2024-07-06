@@ -14,7 +14,7 @@ class Profile(models.Model):
     location = models.CharField(max_length=100, blank=True, null=True)
 
     def __str__(self):
-        return f"{self.user_id} - {self.user.username}"
+        return f"{self.userid} - {self.user.username}"
     
 
 class Post(models.Model):

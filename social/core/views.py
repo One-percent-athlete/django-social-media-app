@@ -2,6 +2,8 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.models import User, auth
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from itertools import chain
+import random
 
 from .models import Profile, Post, LikePost, Followers
 
@@ -9,8 +11,63 @@ from .models import Profile, Post, LikePost, Followers
 def home(request):
     user = User.objects.get(username=request.user.username)
     user_profile = Profile.objects.get(user=user)
+
     posts = Post.objects.all()
-    return render(request, 'home.html', {'user_profile': user_profile, 'posts':posts})
+
+    #for the user to see only the posts of the people the user follows
+
+    # user_following_list = []
+    # feed = []
+    # user_following = Followers.objects.filter(follower=request.user.username)
+
+    # for user in user_following:
+    #     user_following_list.append(user.user)
+    # for user in user_following_list:
+    #     feed_list = Post.objects.filter(user=user)
+    #     feed.append(feed_list)
+    # feed = list(chain(*feed))
+    all_users = User.objects.all()
+    user_following = Followers.objects.filter(follower=request.user.username)
+    user_followings = []
+    for user in user_following:
+        usernames = User.objects.get(username=user)
+        user_followings.append(usernames)
+    
+    suggested_users = [user for user in list(all_users) if (user not in list(user_followings))]
+
+    current_user = User.objects.filter(username=request.user.username)
+
+    suggested_users = [user for user in list(suggested_users) if (user not in list(current_user))]
+
+    suggested_user_profiles = []
+    for user in suggested_users:
+        user_p = Profile.objects.get(user=user)
+        suggested_user_profiles.append(user_p)
+    
+    # suggested_user_profiles = list(chain(*suggested_user_profiles))
+
+
+    return render(request, 'home.html', {'user_profile': user_profile, 'posts':posts, 'suggested_user_profiles':suggested_user_profiles, 'current_user':current_user})
+
+
+@login_required(login_url='signin')
+def search(request):
+    user = User.objects.get(username=request.user.username)
+    user_profile = Profile.objects.get(user=user)
+
+    if request.method == "POST":
+        search = request.POST["username"]
+        users = User.objects.filter(username__icontains=search)
+        ids = []
+        profiles = []
+
+        for user in users:
+            ids.append(user.id)
+        for id in ids:
+            profile = Profile.objects.filter(userid=id)
+            profiles.append(profile)
+        profiles = list(chain(*profiles))
+    return render(request, 'search.html', {"search":search, "user_profile":user_profile, "profiles":profiles})
     
     
 @login_required(login_url='signin')
